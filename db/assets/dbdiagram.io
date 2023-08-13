@@ -6,8 +6,8 @@ Table account {
   owner varchar(100) [not null]
   balance decimal [not null]
   currency varchar(30) [not null]
-  created_at timestamptz [not null, default: `now()`]
-  last_modified_at timestamptz [not null, default: `now()`]
+  created_at timestampz [not null, default: `now()`]
+  last_modified_at timestampz [not null, default: `now()`]
 
   Indexes {
     owner
@@ -16,9 +16,9 @@ Table account {
 
 Table entries {
   id uuid [pk, default: `uuid_generate_v4()`]
-  account_id uuid [not null] [ref: > account.id]
+  account_id uuid [ref: > account.id, not null]
   amount decimal [not null]
-  created_at timestamptz [not null, default: `now()`]
+  created_at timestampz [not null, default: `now()`]
 
   Indexes {
     account_id
@@ -27,10 +27,10 @@ Table entries {
 
 Table transfers {
   id uuid [pk, default: `uuid_generate_v4()`]
-  from_account_id uuid [not null] [ref: > account.id]
-  to_account_id uuid [not null] [ref: > account.id]
+  from_account_id uuid [ref: > account.id, not null]
+  to_account_id uuid [ref: > account.id, not null]
   amount decimal [not null]
-  created_at timestamptz [not null, default: `now()`]
+  created_at timestampz [not null, default: `now()`]
 
   Indexes {
     from_account_id
