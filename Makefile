@@ -15,3 +15,6 @@ migrate-up:
 
 migrate-down:
 	migrate -path db/migration -database "postgresql://root:test_local@localhost:5432/bank?sslmode=disable" -verbose down
+
+sqlc:
+	sqlc generate
