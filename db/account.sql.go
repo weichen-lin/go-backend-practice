@@ -13,7 +13,7 @@ import (
 )
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO account (owner, balance, currency) VALUES ($1, $2, $3) RETURNING id
+INSERT INTO account (owner, balance, currency) VALUES ($1, $2, $3) RETURNING id, owner, balance, currency, created_at, last_modified_at
 `
 
 type CreateAccountParams struct {
@@ -22,11 +22,18 @@ type CreateAccountParams struct {
 	Currency string
 }
 
-func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (uuid.UUID, error) {
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
 	row := q.db.QueryRowContext(ctx, createAccount, arg.Owner, arg.Balance, arg.Currency)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+		&i.LastModifiedAt,
+	)
+	return i, err
 }
 
 const deleteAccount = `-- name: DeleteAccount :exec

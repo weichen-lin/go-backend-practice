@@ -1,5 +1,5 @@
 -- name: CreateAccount :one
-INSERT INTO account (owner, balance, currency) VALUES ($1, $2, $3) RETURNING id;
+INSERT INTO account (owner, balance, currency) VALUES ($1, $2, $3) RETURNING *;
 
 -- name: GetAccount :one
 SELECT * FROM account WHERE id = $1;
