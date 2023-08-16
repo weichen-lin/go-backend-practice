@@ -16,6 +16,7 @@ const (
 
 var testQuries *Queries
 
+// https://darjun.github.io/2021/08/03/godailylib/testing/
 func TestMain(m *testing.M){
 	conn, err := sql.Open(dbDriver, dbSource)
 	if err != nil {
