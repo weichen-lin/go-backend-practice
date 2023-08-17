@@ -9,8 +9,12 @@ import (
 
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-func RandomInt(min, max int64) int64{
-	return min + rand.Int63n(max - min + 1)
+func RandomFloat() float64 {
+
+	numA := rand.Int31()
+	numB := rand.Int31()
+
+	return rand.Float64() * float64(numA-numB)
 }
 
 func Randomstring(n int) string {
@@ -31,7 +35,10 @@ func RandomOwner() string {
 }
 
 func RandomBalance() decimal.Decimal {
-	return decimal.NewFromInt(RandomInt(0, 1000))
+
+	decimal.DivisionPrecision = 3
+
+	return decimal.NewFromFloat(RandomFloat()).Round(3)
 }
 
 func RandomCurrency() string {
