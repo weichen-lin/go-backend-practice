@@ -7,25 +7,26 @@ import (
 	"time"
 
 	"github.com/go-backend-practice/util"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount(t *testing.T) Account {
+func CreateRandomAccount(t *testing.T) Account {
 	arg := CreateAccountParams{
-		Owner: util.RandomOwner(),
-		Balance: util.RandomBalance(),
+		Owner:    "test_" + util.RandomOwner(),
+		Balance:  util.RandomBalance(),
 		Currency: util.RandomCurrency(),
 	}
 
 	account, err := testQuries.CreateAccount(context.Background(), arg)
-	
+
 	require.NoError(t, err)
 	require.NotEmpty(t, account)
 
 	require.Equal(t, arg.Owner, account.Owner)
 	require.Equal(t, arg.Balance, account.Balance)
 	require.Equal(t, arg.Currency, account.Currency)
-	
+
 	require.NotEmpty(t, account.ID)
 
 	require.NotZero(t, account.CreatedAt)
@@ -35,7 +36,7 @@ func createRandomAccount(t *testing.T) Account {
 }
 
 func Test_GetAccount(t *testing.T) {
-	account1 := createRandomAccount(t)
+	account1 := CreateRandomAccount(t)
 	account2, err := testQuries.GetAccount(context.Background(), account1.ID)
 
 	require.NoError(t, err)
@@ -50,24 +51,27 @@ func Test_GetAccount(t *testing.T) {
 }
 
 func Test_UpdateAccount(t *testing.T) {
-	account1 := createRandomAccount(t)
+
+	decimal.DivisionPrecision = 3
+
+	account1 := CreateRandomAccount(t)
 
 	arg := UpdateAccountParams{
-		ID: account1.ID,
-		Balance: util.RandomBalance(),
+		ID:      account1.ID,
+		Balance: account1.Balance.Add(util.RandomBalance()),
 	}
 
 	account2, err := testQuries.UpdateAccount(context.Background(), arg)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, account2)
-	
+
 	require.Equal(t, account1.ID, account2.ID)
 	require.Equal(t, arg.Balance, account2.Balance)
 }
 
 func Test_DeleteAccount(t *testing.T) {
-	account1 := createRandomAccount(t)
+	account1 := CreateRandomAccount(t)
 	err := testQuries.DeleteAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
@@ -79,11 +83,11 @@ func Test_DeleteAccount(t *testing.T) {
 
 func Test_ListAccount(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		createRandomAccount(t)
+		CreateRandomAccount(t)
 	}
 
 	arg := ListAccountsParams{
-		Limit: 5,
+		Limit:  5,
 		Offset: 5,
 	}
 
@@ -91,7 +95,7 @@ func Test_ListAccount(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, accounts, 5)
 
-	for _, account := range accounts { 
+	for _, account := range accounts {
 		require.NotEmpty(t, account)
 	}
 }
