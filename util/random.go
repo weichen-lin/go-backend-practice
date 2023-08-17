@@ -44,15 +44,5 @@ func RandomCurrency() string {
 
 func RandomBalance() decimal.Decimal {
 
-	decimal.DivisionPrecision = 3
-
-	num := decimal.NewFromFloat(1.230)
-
-	convert, err := decimal.NewFromString(num.StringFixed(3))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return convert
+	return decimal.NewFromFloat(RandomFloat()).Round(3)
 }

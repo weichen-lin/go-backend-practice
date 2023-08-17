@@ -21,8 +21,11 @@ func Test_CreateEntry(t *testing.T) {
 	require.NotEmpty(t, entry1)
 
 	require.Equal(t, arg.AccountID, entry1.AccountID)
-	require.Equal(t, arg.Amount, entry1.Amount)
-
+	
 	require.NotEmpty(t, entry1.ID)
 	require.NotEmpty(t, entry1.CreatedAt)
+
+	if(!arg.Amount.Equal(entry1.Amount)) {
+		panic("Create entry amount not equal!")
+	}
 }
