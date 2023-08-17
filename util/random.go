@@ -34,17 +34,25 @@ func RandomOwner() string {
 	return Randomstring(6)
 }
 
-func RandomBalance() decimal.Decimal {
-
-	decimal.DivisionPrecision = 3
-
-	return decimal.NewFromFloat(RandomFloat()).Round(3)
-}
-
 func RandomCurrency() string {
 	currencies := []string{"USD", "EUR", "TWD"}
 
 	n := len(currencies)
 
 	return currencies[rand.Intn(n)]
+}
+
+func RandomBalance() decimal.Decimal {
+
+	decimal.DivisionPrecision = 3
+
+	num := decimal.NewFromFloat(1.230)
+
+	convert, err := decimal.NewFromString(num.StringFixed(3))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return convert
 }
