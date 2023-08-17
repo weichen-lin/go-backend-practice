@@ -21,3 +21,6 @@ sqlc:
 
 test:
 	go test -v -cover ./...
+
+format:
+	find $(PWD) -name "*.go" -exec gofmt -w {} \;
