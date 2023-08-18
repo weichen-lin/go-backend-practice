@@ -15,15 +15,17 @@ const (
 )
 
 var testQuries *Queries
+var testTxConn *sql.DB
 
 // https://darjun.github.io/2021/08/03/godailylib/testing/
 func TestMain(m *testing.M) {
-	conn, err := sql.Open(dbDriver, dbSource)
+	var err error
+	testTxConn, err = sql.Open(dbDriver, dbSource)
 	if err != nil {
 		log.Fatal("cannot connect to db: ", err)
 	}
 
-	testQuries = New(conn)
+	testQuries = New(testTxConn)
 
 	os.Exit(m.Run())
 }

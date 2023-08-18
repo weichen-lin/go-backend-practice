@@ -30,7 +30,7 @@ func CreateRandomAccount(t *testing.T) Account {
 	require.NotZero(t, account.CreatedAt)
 	require.NotZero(t, account.LastModifiedAt)
 
-	if(!arg.Balance.Equal(account.Balance)){
+	if !arg.Balance.Equal(account.Balance) {
 		panic("Create random account balance not equal!")
 	}
 
@@ -46,7 +46,7 @@ func Test_GetAccount(t *testing.T) {
 
 	require.Equal(t, account1.ID, account2.ID)
 
-	if(!account1.Balance.Equal(account2.Balance)){
+	if !account1.Balance.Equal(account2.Balance) {
 		panic("Create new account error!")
 	}
 	require.Equal(t, account1.Currency, account2.Currency)
@@ -64,13 +64,13 @@ func Test_UpdateAccount(t *testing.T) {
 	}
 
 	account2, err := testQuries.UpdateAccount(context.Background(), arg)
-	
+
 	require.NoError(t, err)
 	require.NotEmpty(t, account2)
 
 	require.Equal(t, account1.ID, account2.ID)
 
-	if (!account2.Balance.Equal(arg.Balance)) {
+	if !account2.Balance.Equal(arg.Balance) {
 		panic("Update balance not equal!")
 	}
 }
