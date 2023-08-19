@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -37,21 +38,31 @@ func CreateRandomAccount(t *testing.T) Account {
 	return account
 }
 
+
 func Test_GetAccount(t *testing.T) {
-	account1 := CreateRandomAccount(t)
-	account2, err := testQuries.GetAccount(context.Background(), account1.ID)
+	txerr := testTx.ExecTx(context.Background(), func () error {
+		var getAccountError error
+		account1 := CreateRandomAccount(t)
+		account2, err := testQuries.GetAccount(context.Background(), account1.ID)
 
-	require.NoError(t, err)
-	require.NotEmpty(t, account2)
+		fmt.Printf("Get account 1 %s, %s", account1.ID, account1.Owner)
+		fmt.Printf("Get account 2 %s, %s", account2.ID, account2.Owner)
 
-	require.Equal(t, account1.ID, account2.ID)
+		require.NoError(t, err)
+		require.NotEmpty(t, account2)
 
-	if !account1.Balance.Equal(account2.Balance) {
-		panic("Create new account error!")
-	}
-	require.Equal(t, account1.Currency, account2.Currency)
+		require.Equal(t, account1.ID, account2.ID)
 
-	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
+		if !account1.Balance.Equal(account2.Balance) {
+			panic("Create new account error!")
+		}
+		require.Equal(t, account1.Currency, account2.Currency)
+		require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
+
+		return getAccountError
+	}, true)
+
+	require.NoError(t, txerr)
 }
 
 func Test_UpdateAccount(t *testing.T) {

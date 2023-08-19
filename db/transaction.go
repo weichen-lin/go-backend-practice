@@ -13,27 +13,20 @@ type Transaction struct {
 
 func NewTransaction(db *sql.DB) *Transaction {
 	return &Transaction{
-		Queries: New(db),
 		db:      db,
 	}
 }
 
-func (transaction *Transaction) ExecTx(ctx context.Context, fn func(*Queries) error, isTest bool) error {
+func (transaction *Transaction) ExecTx(ctx context.Context, fn func() error, isTest bool) error {
 	var rbErr error
 	tx, err := transaction.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		if isTest {
-			rbErr = tx.Rollback()
-		}
-		rbErr = tx.Commit()
-	}()
-
-	q := New(tx)
-	err = fn(q)
+	fmt.Println("We are at a db transaction")
+	// q := New(tx)
+	err = fn()
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
@@ -41,5 +34,11 @@ func (transaction *Transaction) ExecTx(ctx context.Context, fn func(*Queries) er
 		return err
 	}
 	
+	if isTest {
+		rbErr = tx.Rollback()
+	} else {
+		rbErr = tx.Commit()
+	}
+
 	return rbErr
 }
