@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"testing"
 	"time"
 
@@ -45,9 +44,6 @@ func Test_GetAccount(t *testing.T) {
 		account1 := CreateRandomAccount(t)
 		account2, err := testQuries.GetAccount(context.Background(), account1.ID)
 
-		fmt.Printf("Get account 1 %s, %s", account1.ID, account1.Owner)
-		fmt.Printf("Get account 2 %s, %s", account2.ID, account2.Owner)
-
 		require.NoError(t, err)
 		require.NotEmpty(t, account2)
 
@@ -66,52 +62,70 @@ func Test_GetAccount(t *testing.T) {
 }
 
 func Test_UpdateAccount(t *testing.T) {
+	var updateAccount error
+	txerr := testTx.ExecTx(context.Background(), func () error {
+		account1 := CreateRandomAccount(t)
 
-	account1 := CreateRandomAccount(t)
+		arg := UpdateAccountParams{
+			ID:      account1.ID,
+			Balance: account1.Balance.Add(util.RandomBalance()).Round(3),
+		}
 
-	arg := UpdateAccountParams{
-		ID:      account1.ID,
-		Balance: account1.Balance.Add(util.RandomBalance()).Round(3),
-	}
+		account2, err := testQuries.UpdateAccount(context.Background(), arg)
 
-	account2, err := testQuries.UpdateAccount(context.Background(), arg)
+		require.NoError(t, err)
+		require.NotEmpty(t, account2)
 
-	require.NoError(t, err)
-	require.NotEmpty(t, account2)
+		require.Equal(t, account1.ID, account2.ID)
 
-	require.Equal(t, account1.ID, account2.ID)
+		if !account2.Balance.Equal(arg.Balance) {
+			panic("Update balance not equal!")
+		}
+		return updateAccount
+	}, true)
 
-	if !account2.Balance.Equal(arg.Balance) {
-		panic("Update balance not equal!")
-	}
+	require.NoError(t, txerr)
 }
 
 func Test_DeleteAccount(t *testing.T) {
-	account1 := CreateRandomAccount(t)
-	err := testQuries.DeleteAccount(context.Background(), account1.ID)
-	require.NoError(t, err)
+	var testDeleteAccount error
+	txerr := testTx.ExecTx(context.Background(), func () error {
+		account1 := CreateRandomAccount(t)
+		err := testQuries.DeleteAccount(context.Background(), account1.ID)
+		require.NoError(t, err)
 
-	account2, err := testQuries.GetAccount(context.Background(), account1.ID)
-	require.Error(t, err)
-	require.EqualError(t, err, sql.ErrNoRows.Error())
-	require.Empty(t, account2)
+		account2, err := testQuries.GetAccount(context.Background(), account1.ID)
+		require.Error(t, err)
+		require.EqualError(t, err, sql.ErrNoRows.Error())
+		require.Empty(t, account2)
+
+		return testDeleteAccount
+	}, true)
+
+	require.NoError(t, txerr)
 }
 
 func Test_ListAccount(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		CreateRandomAccount(t)
-	}
+	var testListAccount error
+	txerr := testTx.ExecTx(context.Background(), func () error {
+		for i := 0; i < 10; i++ {
+			CreateRandomAccount(t)
+		}
+	
+		arg := ListAccountsParams{
+			Limit:  5,
+			Offset: 5,
+		}
+	
+		accounts, err := testQuries.ListAccounts(context.Background(), arg)
+		require.NoError(t, err)
+		require.Len(t, accounts, 5)
+	
+		for _, account := range accounts {
+			require.NotEmpty(t, account)
+		}
+		return testListAccount
+	}, true)
 
-	arg := ListAccountsParams{
-		Limit:  5,
-		Offset: 5,
-	}
-
-	accounts, err := testQuries.ListAccounts(context.Background(), arg)
-	require.NoError(t, err)
-	require.Len(t, accounts, 5)
-
-	for _, account := range accounts {
-		require.NotEmpty(t, account)
-	}
+	require.NoError(t, txerr)
 }

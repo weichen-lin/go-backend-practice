@@ -8,5 +8,6 @@ import (
 
 func main() {
 	a := util.RandomBalance()
+	
 	fmt.Println(a)
 }

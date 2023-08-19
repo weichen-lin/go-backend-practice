@@ -23,9 +23,7 @@ func (transaction *Transaction) ExecTx(ctx context.Context, fn func() error, isT
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("We are at a db transaction")
-	// q := New(tx)
+	
 	err = fn()
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
