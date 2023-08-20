@@ -37,9 +37,8 @@ func CreateRandomAccount(t *testing.T) Account {
 	return account
 }
 
-
 func Test_GetAccount(t *testing.T) {
-	txerr := testTx.ExecTx(context.Background(), func () error {
+	txerr := ExecTestingTx(context.Background(), testTx, func() error {
 		var getAccountError error
 		account1 := CreateRandomAccount(t)
 		account2, err := testQuries.GetAccount(context.Background(), account1.ID)
@@ -63,7 +62,7 @@ func Test_GetAccount(t *testing.T) {
 
 func Test_UpdateAccount(t *testing.T) {
 	var updateAccount error
-	txerr := testTx.ExecTx(context.Background(), func () error {
+	txerr := ExecTestingTx(context.Background(), testTx, func() error {
 		account1 := CreateRandomAccount(t)
 
 		arg := UpdateAccountParams{
@@ -89,7 +88,7 @@ func Test_UpdateAccount(t *testing.T) {
 
 func Test_DeleteAccount(t *testing.T) {
 	var testDeleteAccount error
-	txerr := testTx.ExecTx(context.Background(), func () error {
+	txerr := ExecTestingTx(context.Background(), testTx, func() error {
 		account1 := CreateRandomAccount(t)
 		err := testQuries.DeleteAccount(context.Background(), account1.ID)
 		require.NoError(t, err)
@@ -107,20 +106,20 @@ func Test_DeleteAccount(t *testing.T) {
 
 func Test_ListAccount(t *testing.T) {
 	var testListAccount error
-	txerr := testTx.ExecTx(context.Background(), func () error {
+	txerr := ExecTestingTx(context.Background(), testTx, func() error {
 		for i := 0; i < 10; i++ {
 			CreateRandomAccount(t)
 		}
-	
+
 		arg := ListAccountsParams{
 			Limit:  5,
 			Offset: 5,
 		}
-	
+
 		accounts, err := testQuries.ListAccounts(context.Background(), arg)
 		require.NoError(t, err)
 		require.Len(t, accounts, 5)
-	
+
 		for _, account := range accounts {
 			require.NotEmpty(t, account)
 		}

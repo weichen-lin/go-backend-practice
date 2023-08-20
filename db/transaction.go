@@ -11,28 +11,37 @@ type Transaction struct {
 	db *sql.DB
 }
 
+var testQuries *Queries
+
 func NewTransaction(db *sql.DB) *Transaction {
 	return &Transaction{
-		db:      db,
+		db: db,
 	}
 }
 
-func (transaction *Transaction) ExecTx(ctx context.Context, fn func() error, isTest bool) error {
+func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func() error, isTest bool) error {
 	var rbErr error
-	tx, err := transaction.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
+
+	tx, txerr := transaction.db.BeginTx(ctx, nil)
+
+	if txerr != nil {
+		return txerr
 	}
-	
-	err = fn()
+
+	fmt.Printf("tx start : %v\n", tx)
+
+	testQuries = New(tx)
+
+	err := fn()
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
 		}
 		return err
 	}
-	
+
 	if isTest {
+		fmt.Printf("tx end and rollback because of test : %v\n", tx)
 		rbErr = tx.Rollback()
 	} else {
 		rbErr = tx.Commit()

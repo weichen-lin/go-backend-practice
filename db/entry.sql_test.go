@@ -10,7 +10,7 @@ import (
 func Test_CreateEntry(t *testing.T) {
 	var testCreateEntryError error
 
-	txerr := testTx.ExecTx(context.Background(), func () error {
+	txerr := ExecTestingTx(context.Background(), testTx, func() error {
 		account1 := CreateRandomAccount(t)
 
 		arg := CreateEntryParams{
