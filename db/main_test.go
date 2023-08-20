@@ -16,15 +16,18 @@ const (
 
 var testTx *Transaction
 
+var sharedConn *sql.DB
+
 // https://darjun.github.io/2021/08/03/godailylib/testing/
 func TestMain(m *testing.M) {
-	conn, err := sql.Open(dbDriver, dbSource)
+	var connErr error
+	sharedConn, connErr = sql.Open(dbDriver, dbSource)
 
-	if err != nil {
-		log.Fatal("cannot connect to db: ", err)
+	if connErr != nil {
+		log.Fatal("cannot connect to db: ", connErr)
 	}
 
-	testTx = NewTransaction(conn)
+	testTx = NewTransaction(sharedConn)
 
 	os.Exit(m.Run())
 }

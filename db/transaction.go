@@ -11,15 +11,13 @@ type Transaction struct {
 	db *sql.DB
 }
 
-var testQuries *Queries
-
 func NewTransaction(db *sql.DB) *Transaction {
 	return &Transaction{
 		db: db,
 	}
 }
 
-func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func() error, isTest bool) error {
+func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func(*Queries) error, isTest bool) error {
 	var rbErr error
 
 	tx, txerr := transaction.db.BeginTx(ctx, nil)
@@ -30,9 +28,9 @@ func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func() erro
 
 	fmt.Printf("tx start : %v\n", tx)
 
-	testQuries = New(tx)
+	q := New(tx)
 
-	err := fn()
+	err := fn(q)
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
@@ -48,4 +46,30 @@ func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func() erro
 	}
 
 	return rbErr
+}
+
+func (transaction *Transaction) ExecTx(ctx context.Context, fn func(*Queries) error, needRollback bool) error {
+	tx, txerr := transaction.db.BeginTx(ctx, nil)
+
+	if txerr != nil {
+		return txerr
+	}
+
+	fmt.Printf("tx start : %v\n", tx)
+
+	q := New(tx)
+
+	err := fn(q)
+	if err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
+		}
+		return err
+	}
+
+	if needRollback {
+		return tx.Rollback()
+	} else {
+		return tx.Commit()
+	}
 }

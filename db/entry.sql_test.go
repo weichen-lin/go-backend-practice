@@ -10,15 +10,15 @@ import (
 func Test_CreateEntry(t *testing.T) {
 	var testCreateEntryError error
 
-	txerr := ExecTestingTx(context.Background(), testTx, func() error {
-		account1 := CreateRandomAccount(t)
+	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+		account1 := CreateRandomAccount(t, q)
 
 		arg := CreateEntryParams{
 			AccountID: account1.ID,
 			Amount:    account1.Balance,
 		}
 
-		entry1, err := testQuries.CreateEntry(context.Background(), arg)
+		entry1, err := q.CreateEntry(context.Background(), arg)
 
 		require.NoError(t, err)
 		require.NotEmpty(t, entry1)
