@@ -34,3 +34,12 @@ func (q *Queries) CreateTransfer(ctx context.Context, arg CreateTransferParams) 
 	)
 	return i, err
 }
+
+const deleteTransfer = `-- name: DeleteTransfer :exec
+DELETE FROM transfers WHERE from_account_id = $1
+`
+
+func (q *Queries) DeleteTransfer(ctx context.Context, fromAccountID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteTransfer, fromAccountID)
+	return err
+}

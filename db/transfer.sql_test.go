@@ -2,9 +2,11 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/go-backend-practice/util"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +17,7 @@ func createTwoAccountForTestTransfer(t *testing.T, q *Queries) []Account {
 	return []Account{account1, account2}
 }
 
-func createTransferFlow(t *testing.T, q *Queries, accounts []Account) error {
+func createTransferFlow(t *testing.T, q *Queries, accounts []Account) (decimal.Decimal, error) {
 	var transferErr error
 
 	account1 := accounts[0]
@@ -47,6 +49,7 @@ func createTransferFlow(t *testing.T, q *Queries, accounts []Account) error {
 	if !entryFrom.Amount.Equal(arg.Amount.Neg()) {
 		panic("Create EntryFrom amount not equal!")
 	}
+
 	entryTo, entryToErr := q.CreateEntry(context.Background(), CreateEntryParams{
 		AccountID: account2.ID,
 		Amount:    arg.Amount,
@@ -59,22 +62,60 @@ func createTransferFlow(t *testing.T, q *Queries, accounts []Account) error {
 		panic("Create EntryTo amount not equal!")
 	}
 
-	// TODO: update account1 and account2 balance
+	getAccount1, err1 := q.GetAccountForUpdate(context.Background(), accounts[0].ID)
+	getAccount2, err2 := q.GetAccountForUpdate(context.Background(), accounts[1].ID)
+	fmt.Printf("get account amount %v\n", getAccount1.Balance)
 
-	return transferErr
+	require.NoError(t, err1)
+	require.NoError(t, err2)
+
+	updateAccount1, updateAccount1Err := q.UpdateAccount(context.Background(), UpdateAccountParams{
+		ID:      getAccount1.ID,
+		Balance: getAccount1.Balance.Add(arg.Amount.Neg()),
+	})
+
+	require.NoError(t, updateAccount1Err)
+	require.NotEmpty(t, updateAccount1)
+
+	updateAccount2, updateAccount2Err := q.UpdateAccount(context.Background(), UpdateAccountParams{
+		ID:      getAccount2.ID,
+		Balance: getAccount2.Balance.Add(arg.Amount),
+	})
+
+	require.NoError(t, updateAccount2Err)
+	require.NotEmpty(t, updateAccount2)
+
+	if !updateAccount1.Balance.Equal(getAccount1.Balance.Add(arg.Amount.Neg())) {
+		panic("Update Account1 balance not equal!")
+	}
+
+	if !updateAccount2.Balance.Equal(getAccount2.Balance.Add(arg.Amount)) {
+		panic("Update Account2 balance not equal!")
+	}
+
+	return arg.Amount, transferErr
 }
 
 func Test_CreateTransfer(t *testing.T) {
+
 	q := New(sharedConn)
 	accounts := createTwoAccountForTestTransfer(t, q)
+	require.Len(t, accounts, 2)
+
+	repeat := 60
 
 	errs := make(chan error)
+	amounts := make(chan decimal.Decimal, repeat)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < repeat; i++ {
+
 		go func() {
 			tx := NewTransaction(sharedConn)
 			err := tx.ExecTx(context.Background(), func(q *Queries) error {
-				createTransforErr := createTransferFlow(t, q, accounts)
+				amountTransfer, createTransforErr := createTransferFlow(t, q, accounts)
+				
+				amounts <- amountTransfer
+				
 				return createTransforErr
 			}, false)
 
@@ -82,8 +123,42 @@ func Test_CreateTransfer(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < 10; i++ {
-		err := <-errs
-		require.NoError(t, err)
+	var finalAmount decimal.Decimal
+
+	for i := 0; i < repeat; i++ {
+		finalAmount = finalAmount.Add(<-amounts)
 	}
+
+	err := <-errs
+	require.NoError(t, err)
+
+	check1, check1Err := q.GetAccountForUpdate(context.Background(), accounts[0].ID)
+	check2, check2Err := q.GetAccountForUpdate(context.Background(), accounts[1].ID)
+
+	require.NoError(t, check1Err)
+	require.NoError(t, check2Err)
+
+	if !check1.Balance.Equal(accounts[0].Balance.Add(finalAmount.Neg())) {
+		panic("Final Account1 balance not correct!")
+	}
+
+	if !check2.Balance.Equal(accounts[1].Balance.Add(finalAmount)) {
+		panic("Final Account2 balance not correct!")
+	}
+
+	deleteTransferErr := q.DeleteTransfer(context.Background(), accounts[0].ID)
+
+	require.NoError(t, deleteTransferErr)
+
+	deleteEntry1Err := q.DeleteEntry(context.Background(), accounts[0].ID)
+	deleteEntry2Err := q.DeleteEntry(context.Background(), accounts[1].ID)
+
+	require.NoError(t, deleteEntry1Err)
+	require.NoError(t, deleteEntry2Err)
+	
+	deleteAccount1Err := q.DeleteAccount(context.Background(), accounts[0].ID)
+	deleteAccount2Err := q.DeleteAccount(context.Background(), accounts[1].ID)
+
+	require.NoError(t, deleteAccount1Err)
+	require.NoError(t, deleteAccount2Err)
 }

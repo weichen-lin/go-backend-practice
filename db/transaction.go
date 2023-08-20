@@ -55,8 +55,6 @@ func (transaction *Transaction) ExecTx(ctx context.Context, fn func(*Queries) er
 		return txerr
 	}
 
-	fmt.Printf("tx start : %v\n", tx)
-
 	q := New(tx)
 
 	err := fn(q)
