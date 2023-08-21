@@ -8,24 +8,31 @@ import (
 )
 
 func Test_CreateEntry(t *testing.T) {
-	account1 := CreateRandomAccount(t)
+	var testCreateEntryError error
 
-	arg := CreateEntryParams{
-		AccountID: account1.ID,
-		Amount:    account1.Balance,
-	}
+	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+		account1 := CreateRandomAccount(t, q)
 
-	entry1, err := testQuries.CreateEntry(context.Background(), arg)
+		arg := CreateEntryParams{
+			AccountID: account1.ID,
+			Amount:    account1.Balance,
+		}
 
-	require.NoError(t, err)
-	require.NotEmpty(t, entry1)
+		entry1, err := q.CreateEntry(context.Background(), arg)
 
-	require.Equal(t, arg.AccountID, entry1.AccountID)
+		require.NoError(t, err)
+		require.NotEmpty(t, entry1)
 
-	require.NotEmpty(t, entry1.ID)
-	require.NotEmpty(t, entry1.CreatedAt)
+		require.Equal(t, arg.AccountID, entry1.AccountID)
 
-	if !arg.Amount.Equal(entry1.Amount) {
-		panic("Create entry amount not equal!")
-	}
+		require.NotEmpty(t, entry1.ID)
+		require.NotEmpty(t, entry1.CreatedAt)
+
+		if !arg.Amount.Equal(entry1.Amount) {
+			panic("Create entry amount not equal!")
+		}
+		return testCreateEntryError
+	}, true)
+
+	require.NoError(t, txerr)
 }
