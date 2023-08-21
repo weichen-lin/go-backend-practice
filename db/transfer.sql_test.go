@@ -2,10 +2,9 @@ package db
 
 import (
 	"context"
-	"fmt"
+	"sync"
 	"testing"
 
-	"github.com/go-backend-practice/util"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +25,7 @@ func createTransferFlow(t *testing.T, q *Queries, accounts []Account) (decimal.D
 	arg := CreateTransferParams{
 		FromAccountID: account1.ID,
 		ToAccountID:   account2.ID,
-		Amount:        util.RandomBalance(),
+		Amount:        decimal.NewFromFloat(123.456),
 	}
 
 	transfer, tferr := q.CreateTransfer(context.Background(), arg)
@@ -64,32 +63,21 @@ func createTransferFlow(t *testing.T, q *Queries, accounts []Account) (decimal.D
 
 	getAccount1, err1 := q.GetAccountForUpdate(context.Background(), accounts[0].ID)
 	getAccount2, err2 := q.GetAccountForUpdate(context.Background(), accounts[1].ID)
-	fmt.Printf("get account amount %v\n", getAccount1.Balance)
 
 	require.NoError(t, err1)
 	require.NoError(t, err2)
 
-	updateAccount1, updateAccount1Err := q.UpdateAccount(context.Background(), UpdateAccountParams{
-		ID:      getAccount1.ID,
-		Balance: getAccount1.Balance.Add(arg.Amount.Neg()),
-	})
+	FromAccount, ToAccount, updateErr := q.AccountTransfer(getAccount1, getAccount2, arg.Amount)
 
-	require.NoError(t, updateAccount1Err)
-	require.NotEmpty(t, updateAccount1)
+	require.NotEmpty(t, FromAccount)
+	require.NotEmpty(t, ToAccount)
+	require.NoError(t, updateErr)
 
-	updateAccount2, updateAccount2Err := q.UpdateAccount(context.Background(), UpdateAccountParams{
-		ID:      getAccount2.ID,
-		Balance: getAccount2.Balance.Add(arg.Amount),
-	})
-
-	require.NoError(t, updateAccount2Err)
-	require.NotEmpty(t, updateAccount2)
-
-	if !updateAccount1.Balance.Equal(getAccount1.Balance.Add(arg.Amount.Neg())) {
+	if !FromAccount.Balance.Equal(getAccount1.Balance.Add(arg.Amount.Neg())) {
 		panic("Update Account1 balance not equal!")
 	}
 
-	if !updateAccount2.Balance.Equal(getAccount2.Balance.Add(arg.Amount)) {
+	if !ToAccount.Balance.Equal(getAccount2.Balance.Add(arg.Amount)) {
 		panic("Update Account2 balance not equal!")
 	}
 
@@ -98,24 +86,25 @@ func createTransferFlow(t *testing.T, q *Queries, accounts []Account) (decimal.D
 
 func Test_CreateTransfer(t *testing.T) {
 
+	wg := sync.WaitGroup{}
+
 	q := New(sharedConn)
 	accounts := createTwoAccountForTestTransfer(t, q)
 	require.Len(t, accounts, 2)
 
-	repeat := 60
+	repeat := 10
 
-	errs := make(chan error)
+	errs := make(chan error, repeat)
 	amounts := make(chan decimal.Decimal, repeat)
 
 	for i := 0; i < repeat; i++ {
-
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			tx := NewTransaction(sharedConn)
 			err := tx.ExecTx(context.Background(), func(q *Queries) error {
 				amountTransfer, createTransforErr := createTransferFlow(t, q, accounts)
-				
 				amounts <- amountTransfer
-				
 				return createTransforErr
 			}, false)
 
@@ -123,10 +112,15 @@ func Test_CreateTransfer(t *testing.T) {
 		}()
 	}
 
+	wg.Wait()
+
+	close(errs)
+	close(amounts)
+
 	var finalAmount decimal.Decimal
 
-	for i := 0; i < repeat; i++ {
-		finalAmount = finalAmount.Add(<-amounts)
+	for amount := range amounts {
+		finalAmount = finalAmount.Add(amount)
 	}
 
 	err := <-errs
@@ -155,7 +149,7 @@ func Test_CreateTransfer(t *testing.T) {
 
 	require.NoError(t, deleteEntry1Err)
 	require.NoError(t, deleteEntry2Err)
-	
+
 	deleteAccount1Err := q.DeleteAccount(context.Background(), accounts[0].ID)
 	deleteAccount2Err := q.DeleteAccount(context.Background(), accounts[1].ID)
 

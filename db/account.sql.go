@@ -125,14 +125,14 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 
 const updateAccount = `-- name: UpdateAccount :one
 UPDATE account 
-SET balance = $1 
+SET balance = balance + $1 
 WHERE id = $2
 RETURNING id, balance
 `
 
 type UpdateAccountParams struct {
-	Balance decimal.Decimal
-	ID      uuid.UUID
+	Amount decimal.Decimal
+	ID     uuid.UUID
 }
 
 type UpdateAccountRow struct {
@@ -141,7 +141,7 @@ type UpdateAccountRow struct {
 }
 
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (UpdateAccountRow, error) {
-	row := q.db.QueryRowContext(ctx, updateAccount, arg.Balance, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateAccount, arg.Amount, arg.ID)
 	var i UpdateAccountRow
 	err := row.Scan(&i.ID, &i.Balance)
 	return i, err

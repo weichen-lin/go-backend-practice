@@ -15,8 +15,8 @@ OFFSET $2;
 
 -- name: UpdateAccount :one
 UPDATE account 
-SET balance = $1 
-WHERE id = $2
+SET balance = balance + sqlc.arg(amount) 
+WHERE id = sqlc.arg(id)
 RETURNING id, balance;
 
 -- name: DeleteAccount :exec

@@ -66,8 +66,8 @@ func Test_UpdateAccount(t *testing.T) {
 		account1 := CreateRandomAccount(t, q)
 
 		arg := UpdateAccountParams{
-			ID:      account1.ID,
-			Balance: account1.Balance.Add(util.RandomBalance()).Round(3),
+			ID:     account1.ID,
+			Amount: util.RandomBalance(),
 		}
 
 		account2, err := q.UpdateAccount(context.Background(), arg)
@@ -77,7 +77,7 @@ func Test_UpdateAccount(t *testing.T) {
 
 		require.Equal(t, account1.ID, account2.ID)
 
-		if !account2.Balance.Equal(arg.Balance) {
+		if !account2.Balance.Equal(account1.Balance.Add(arg.Amount)) {
 			panic("Update balance not equal!")
 		}
 		return updateAccount
