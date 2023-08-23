@@ -11,7 +11,7 @@ import (
 
 const (
 	dbDriver      = "postgres"
-	dbSource      = ""
+	dbSource      = "postgresql://root:test_local@localhost:5432/bank?sslmode=disable"
 	serverAddress = "0.0.0.0:8000"
 )
 
