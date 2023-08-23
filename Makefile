@@ -24,3 +24,6 @@ test:
 
 format:
 	find $(PWD) -name "*.go" -exec gofmt -w {} \;
+
+start:
+	go run main.go

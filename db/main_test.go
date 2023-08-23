@@ -11,7 +11,7 @@ import (
 
 const (
 	dbDriver = "postgres"
-	dbSource = "postgresql://root:test_local@localhost:5432/bank?sslmode=disable"
+	dbSource = ""
 )
 
 var testTx *Transaction

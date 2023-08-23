@@ -1,13 +1,32 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
+	"log"
 
-	"github.com/go-backend-practice/util"
+	"github.com/go-backend-practice/api"
+	"github.com/go-backend-practice/db"
+	_ "github.com/lib/pq"
+)
+
+const (
+	dbDriver      = "postgres"
+	dbSource      = ""
+	serverAddress = "0.0.0.0:8000"
 )
 
 func main() {
-	a := util.RandomBalance()
+	conn, err := sql.Open(dbDriver, dbSource)
+	if err != nil {
+		panic(err)
+	}
 
-	fmt.Println(a)
+	transaction := db.NewTransaction(conn)
+	server := api.NewServer(transaction)
+
+	startServerErr := server.Start(serverAddress)
+
+	if startServerErr != nil {
+		log.Fatal("cannot start server: ", startServerErr)
+	}
 }
