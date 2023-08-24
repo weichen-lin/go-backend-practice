@@ -6,17 +6,17 @@ import (
 
 	"github.com/go-backend-practice/api"
 	"github.com/go-backend-practice/db"
+	"github.com/go-backend-practice/util"
 	_ "github.com/lib/pq"
 )
 
-const (
-	dbDriver      = "postgres"
-	dbSource      = "postgresql://root:test_local@localhost:5432/bank?sslmode=disable"
-	serverAddress = "0.0.0.0:8000"
-)
-
 func main() {
-	conn, err := sql.Open(dbDriver, dbSource)
+	config, err := util.Loadconfig(".")
+	if err != nil {
+		log.Fatal("cannot load config: ", err)
+	}
+
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
 		panic(err)
 	}
@@ -24,7 +24,7 @@ func main() {
 	transaction := db.NewTransaction(conn)
 	server := api.NewServer(transaction)
 
-	startServerErr := server.Start(serverAddress)
+	startServerErr := server.Start(config.ServerAddress)
 
 	if startServerErr != nil {
 		log.Fatal("cannot start server: ", startServerErr)
