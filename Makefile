@@ -27,3 +27,5 @@ format:
 
 start:
 	go run main.go
+
+.PHONY: test
