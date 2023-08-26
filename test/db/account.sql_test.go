@@ -1,4 +1,4 @@
-package db
+package test_db
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-backend-practice/db"
 	"github.com/go-backend-practice/util"
 	"github.com/stretchr/testify/require"
 )
 
-func CreateRandomAccount(t *testing.T, q *Queries) Account {
-	arg := CreateAccountParams{
+func CreateRandomAccount(t *testing.T, q *db.Queries) db.Account {
+	arg := db.CreateAccountParams{
 		Owner:    "test_" + util.RandomOwner(),
 		Balance:  util.RandomBalance(),
 		Currency: util.RandomCurrency(),
@@ -38,7 +39,7 @@ func CreateRandomAccount(t *testing.T, q *Queries) Account {
 }
 
 func Test_GetAccount(t *testing.T) {
-	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+	txerr := db.ExecTestingTx(context.Background(), testTx, func(q *db.Queries) error {
 		var getAccountError error
 		account1 := CreateRandomAccount(t, q)
 		account2, err := q.GetAccount(context.Background(), account1.ID)
@@ -62,10 +63,10 @@ func Test_GetAccount(t *testing.T) {
 
 func Test_UpdateAccount(t *testing.T) {
 	var updateAccount error
-	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+	txerr := db.ExecTestingTx(context.Background(), testTx, func(q *db.Queries) error {
 		account1 := CreateRandomAccount(t, q)
 
-		arg := UpdateAccountParams{
+		arg := db.UpdateAccountParams{
 			ID:     account1.ID,
 			Amount: util.RandomBalance(),
 		}
@@ -88,7 +89,7 @@ func Test_UpdateAccount(t *testing.T) {
 
 func Test_DeleteAccount(t *testing.T) {
 	var testDeleteAccount error
-	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+	txerr := db.ExecTestingTx(context.Background(), testTx, func(q *db.Queries) error {
 		account1 := CreateRandomAccount(t, q)
 		err := q.DeleteAccount(context.Background(), account1.ID)
 		require.NoError(t, err)
@@ -106,12 +107,12 @@ func Test_DeleteAccount(t *testing.T) {
 
 func Test_ListAccount(t *testing.T) {
 	var testListAccount error
-	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+	txerr := db.ExecTestingTx(context.Background(), testTx, func(q *db.Queries) error {
 		for i := 0; i < 10; i++ {
 			CreateRandomAccount(t, q)
 		}
 
-		arg := ListAccountsParams{
+		arg := db.ListAccountsParams{
 			Limit:  5,
 			Offset: 5,
 		}

@@ -1,19 +1,20 @@
-package db
+package test_db
 
 import (
 	"context"
 	"testing"
 
+	"github.com/go-backend-practice/db"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_CreateEntry(t *testing.T) {
 	var testCreateEntryError error
 
-	txerr := ExecTestingTx(context.Background(), testTx, func(q *Queries) error {
+	txerr := db.ExecTestingTx(context.Background(), testTx, func(q *db.Queries) error {
 		account1 := CreateRandomAccount(t, q)
 
-		arg := CreateEntryParams{
+		arg := db.CreateEntryParams{
 			AccountID: account1.ID,
 			Amount:    account1.Balance,
 		}

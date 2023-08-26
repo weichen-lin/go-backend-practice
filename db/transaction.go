@@ -26,20 +26,17 @@ func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func(*Queri
 		return txerr
 	}
 
-	fmt.Printf("tx start : %v\n", tx)
-
 	q := New(tx)
 
 	err := fn(q)
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
+			return fmt.Errorf("execute err: %v, rb err: %v", err, rbErr)
 		}
 		return err
 	}
 
 	if isTest {
-		fmt.Printf("tx end and rollback because of test : %v\n", tx)
 		rbErr = tx.Rollback()
 	} else {
 		rbErr = tx.Commit()
@@ -48,7 +45,7 @@ func ExecTestingTx(ctx context.Context, transaction *Transaction, fn func(*Queri
 	return rbErr
 }
 
-func (transaction *Transaction) ExecTx(ctx context.Context, fn func(*Queries) error, needRollback bool) error {
+func (transaction *Transaction) ExecTx(ctx context.Context, fn func(q *Queries) error, needRollback bool) error {
 	tx, txerr := transaction.db.BeginTx(ctx, nil)
 
 	if txerr != nil {
