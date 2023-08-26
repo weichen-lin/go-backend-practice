@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-backend-practice/db"
+	"github.com/go-backend-practice/util"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func createTransferFlow(t *testing.T, q *db.Queries, accounts []db.Account) (dec
 	arg := db.CreateTransferParams{
 		FromAccountID: account1.ID,
 		ToAccountID:   account2.ID,
-		Amount:        decimal.NewFromFloat(123.456),
+		Amount:        decimal.NewFromFloat(util.RandomFloat()),
 	}
 
 	transfer, tferr := q.CreateTransfer(context.Background(), arg)
@@ -99,7 +100,7 @@ func Test_CreateTransfer(t *testing.T) {
 
 	for i := 0; i < repeat; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func(wg *sync.WaitGroup, errChan chan<- error, amountChan chan<- decimal.Decimal, i int) {
 			defer wg.Done()
 			tx := db.NewTransaction(dbConn)
 			err := tx.ExecTx(context.Background(), func(q *db.Queries) error {
@@ -107,27 +108,30 @@ func Test_CreateTransfer(t *testing.T) {
 				amounts <- amountTransfer
 				return createTransforErr
 			}, false)
-
-			errs <- err
-		}(i)
+			if err != nil {
+				errs <- err
+			}
+		}(&wg, errs, amounts, i)
 	}
 
-	wg.Wait()
-	close(errs)
-	close(amounts)
-
-	for err := range errs {
-		require.NoError(t, err)
-	}
+	go func() {
+		wg.Wait()
+		close(errs)
+		close(amounts)
+	}()
 
 	var finalAmount decimal.Decimal
 
-	for amount := range amounts {
-		finalAmount = finalAmount.Add(amount)
+Loop:
+	for {
+		select {
+		case err := <-errs:
+			require.NoError(t, err)
+			break Loop
+		case amount := <-amounts:
+			finalAmount = finalAmount.Add(amount)
+		}
 	}
-
-	err := <-errs
-	require.NoError(t, err)
 
 	check1, check1Err := query.GetAccountForUpdate(context.Background(), accounts[0].ID)
 	check2, check2Err := query.GetAccountForUpdate(context.Background(), accounts[1].ID)
