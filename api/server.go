@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-backend-practice/db"
 )
@@ -29,6 +32,11 @@ func NewServer(transaction *db.Transaction) *Server {
 func (server *Server) Start(address string) error {
 	return server.router.Run(address)
 }
+
+func (server *Server) Serve(recorder *httptest.ResponseRecorder, req *http.Request) {
+	server.router.ServeHTTP(recorder, req)
+}
+
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
